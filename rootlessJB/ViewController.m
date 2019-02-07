@@ -23,6 +23,8 @@
 @property (weak, nonatomic) IBOutlet UISwitch *enableTweaks;
 @property (weak, nonatomic) IBOutlet UIButton *jailbreakButton;
 @property (weak, nonatomic) IBOutlet UISwitch *installiSuperSU;
+@property (weak, nonatomic) IBOutlet UISwitch *installAppsManager;
+@property (weak, nonatomic) IBOutlet UISwitch *installFilzaFileManager;
 
 @property (weak, nonatomic) IBOutlet UITextView *logs;
 @end
@@ -320,8 +322,31 @@ int system_(char *cmd) {
     failIf(!fileExists("/var/log/testbin.log"), "[-] Failed to load launch daemons");
     failIf(!fileExists("/var/log/jailbreakd-stdout.log"), "[-] Failed to load jailbreakd");
     
-    if (self.enableTweaks.isOn) {
+    if (true)
+    {
+        /* Install zip and unrar */
+        LOG("[*] Installing zip, unzip and unrar");
         
+        chdir("/var/containers/Bundle/tweaksupport/bin/");
+        FILE *zip = fopen((char*)in_bundle("tars/zip.tar"), "r");
+        untar(zip, "/var/containers/Bundle/tweaksupport/bin/");
+        fclose(zip);
+        
+        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/zip"), "[-] Failed to sign zip");
+        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/unzip"), "[-] Failed to sign unzip");
+        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/zipcloak"), "[-] Failed to sign zipcloak");
+        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/zipsplit"), "[-] Failed to sign zipsplit");
+        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/zipnote"), "[-] Failed to sign zipnote");
+        
+        FILE *unrar = fopen((char*)in_bundle("tars/unrar.tar"), "r");
+        untar(unrar, "/var/containers/Bundle/tweaksupport/bin/");
+        fclose(unrar);
+        
+        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/unrar"), "[-] Failed to sign unrar");
+        
+    }
+    
+    if (self.enableTweaks.isOn) {
         //----- magic start here -----//
         LOG("[*] Time for magic");
         
@@ -437,6 +462,115 @@ int system_(char *cmd) {
             fixMmap("/var/LIB/MobileSubstrate/DynamicLibraries/AppSyncUnified.dylib");
             
             failIf(launch("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL), "[-] Failed to install iSuperSU");
+        }
+        
+        if ([self.installFilzaFileManager isOn])
+        {
+            LOG("[*] Installing Filza File Manager");
+            mkdir("/var/containers/Bundle/tweaksupport/usr/libexec/filza", 0777);
+            chown("/var/containers/Bundle/tweaksupport/usr/libexec/filza", 0, 0);
+            removeFile("/var/containers/Bundle/tweaksupport/Applications/Filza.app");
+            removeFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza");
+            removeFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper");
+            removeFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer");
+            removeFile("/var/containers/Bundle/tweaksupport/Library/LaunchDaemons/com.tigisoftware.filza.helper.plist");
+            copyFile(in_bundle("apps/Filza.app"), "/var/containers/Bundle/tweaksupport/Applications/Filza.app");
+            copyFile(in_bundle("tars/com.tigisoftware.filza.helper.plist"), "/var/containers/Bundle/tweaksupport/Library/LaunchDaemons/com.tigisoftware.filza.helper.plist");
+            
+            chown("/var/containers/Bundle/tweaksupport/Library/LaunchDaemons/com.tigisoftware.filza.helper.plist", 0, 0);
+            
+            if (!fileExists(in_bundle("bins/Filza"))) {
+                chdir(in_bundle("bins/"));
+                
+                FILE *f1 = fopen(in_bundle("bins/Filza.tar"), "r");
+                untar(f1, in_bundle("bins/Filza"));
+                fclose(f1);
+                
+                f1 = fopen(in_bundle("bins/FilzaHelper.tar"), "r");
+                untar(f1, in_bundle("bins/FilzaHelper"));
+                fclose(f1);
+                
+                f1 = fopen(in_bundle("bins/FilzaWebDAVServer.tar"), "r");
+                untar(f1, in_bundle("bins/FilzaWebDAVServer"));
+                fclose(f1);
+                
+                
+                chown(in_bundle("bins/Filza"), 0, 0);
+                chown(in_bundle("bins/FilzaHelper"), 0, 0);
+                chown(in_bundle("bins/FilzaWebDAVServer"), 0, 0);
+                NSUInteger perm = S_ISUID | S_ISGID | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+                chmod(in_bundle("bins/Filza"), perm);
+                chmod(in_bundle("bins/FilzaHelper"), 0777);
+                chmod(in_bundle("bins/FilzaWebDAVServer"), 0777);
+                
+                removeFile(in_bundle("bins/Filza.tar"));
+                removeFile(in_bundle("bins/FilzaHelper.tar"));
+                removeFile(in_bundle("bins/FilzaWebDAVServer.tar"));
+            }
+            moveFile("/var/containers/Bundle/tweaksupport/Applications/Filza.app/PlugIns/Sharing.appex/Sharing", "/var/containers/Bundle/tweaksupport/usr/libexec/filza/Sharing");
+            copyFile(in_bundle("bins/Filza"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza");
+            copyFile(in_bundle("bins/FilzaHelper"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper");
+            copyFile(in_bundle("bins/FilzaWebDAVServer"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer");
+            copyFile(in_bundle("bins/Sharing"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/Sharing");
+            
+            failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza"), "[-] Failed to sign Filza File Manager");
+            failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper"), "[-] Failed to sign Filza File Manager");
+            failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer"), "[-] Failed to sign Filza File Manager");
+            failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/Applications/Filza.app"), "[-] Failed to sign Filza File Manager");
+            
+            launch("/var/containers/Bundle/iosbinpack64/bin/launchctl", "unload", "/var/containers/Bundle/iosbinpack64/LaunchDaemons/com.tigisoftware.filza.helper.plist", NULL, NULL, NULL, NULL, NULL);
+            
+            launch("/var/containers/Bundle/iosbinpack64/bin/launchctl", "load", "/var/containers/Bundle/iosbinpack64/LaunchDaemons/com.tigisoftware.filza.helper.plist", NULL, NULL, NULL, NULL, NULL);
+            
+            failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/Applications/Filza.app/dylibs/libsmb2-ios.dylib"), "[-] Failed to sign Filza File Manager");
+            failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/usr/libexec/filza/Sharing"), "[-] Failed to sign Filza File Manager");
+            
+            moveFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/Sharing", "/var/containers/Bundle/tweaksupport/Applications/Filza.app/PlugIns/Sharing.appex/Sharing");
+            
+            mkdir("/var/containers/Bundle/tweaksupport/data", 0777);
+            removeFile("/var/containers/Bundle/tweaksupport/data/Filza.app");
+            copyFile("/var/containers/Bundle/tweaksupport/Applications/Filza.app", "/var/containers/Bundle/tweaksupport/data/Filza.app");
+            
+            // just in case
+            fixMmap("/var/ulb/libsubstitute.dylib");
+            fixMmap("/var/LIB/Frameworks/CydiaSubstrate.framework/CydiaSubstrate");
+            fixMmap("/var/LIB/MobileSubstrate/DynamicLibraries/AppSyncUnified.dylib");
+            
+            failIf(launch("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL), "[-] Failed to install Filza File Manager");
+            
+        }
+        
+        if ([self.installAppsManager isOn])
+        {
+            LOG("[*] Installing Apps Manager");
+            removeFile("/var/containers/Bundle/tweaksupport/Applications/ADManager.app");
+            removeFile("/var/containers/Bundle/tweaksupport/bin/ADMHelper");
+            copyFile(in_bundle("apps/ADManager.app"), "/var/containers/Bundle/tweaksupport/Applications/ADManager.app");
+            
+            if (!fileExists(in_bundle("bins/ADMHelper"))) {
+                chdir(in_bundle("bins/"));
+                
+                FILE *f1 = fopen(in_bundle("bins/ADMHelper.tar"), "r");
+                untar(f1, in_bundle("bins/ADMHelper"));
+                fclose(f1);
+                
+                chown(in_bundle("bins/ADMHelper"), 0, 0);//chown root /usr/bin/ADMHelper
+                NSUInteger perm = S_ISUID | S_ISGID | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+                chmod(in_bundle("bins/ADMHelper"), perm);//chmod ug+s /usr/bin/ADMHelper
+                
+                removeFile(in_bundle("bins/ADMHelper.tar"));
+            }
+            copyFile(in_bundle("bins/ADMHelper"), "/var/containers/Bundle/tweaksupport/bin/ADMHelper");
+            
+            failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/ADMHelper"), "[-] Failed to sign Apps Manager");
+            failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/Applications/ADManager.app"), "[-] Failed to sign Apps Manager");
+            
+            fixMmap("/var/ulb/libsubstitute.dylib");
+            fixMmap("/var/LIB/Frameworks/CydiaSubstrate.framework/CydiaSubstrate");
+            fixMmap("/var/LIB/MobileSubstrate/DynamicLibraries/AppSyncUnified.dylib");
+            
+            failIf(launch("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL), "[-] Failed to install Apps Manager");
+            
         }
         
         LOG("[+] Really jailbroken!");

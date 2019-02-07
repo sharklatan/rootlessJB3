@@ -1,0 +1,33 @@
+Apps Manager 1.4 (1.4 build 1)
+- Change app icon
+- Update translation
+- Fixed issue KC:1313
+- Added bundle settings editor
+- Supported iPad UI
+- Supported iPhone X screen
+- Updated translation
+- Fixed issue KC:1329
+- Fixed issue: Blank icon on some devices
+
+Apps Manager 1.3 (1.3 build 1)
+- Fixed hanging issue
+
+Apps Manager 1.2 (1.2 build 1)
+- Updated for iOS 11 Electra JB
+
+Apps Manager 1.1 (1.1 build 1)
+- Fixed issue: localization strings
+
+Apps Manager 1.1 (1.1 build 0)
+- Added Localization files
+- Supported iOS 10
+
+Apps Manager 1.0.2 (1.0 build 3)
+- Fixed issue 'Could not read backup file'
+
+Apps Manager 1.0.1 (1.0 build 2)
+- Fixed 'Backup Failed' on iOS 8
+
+Apps Manager 1.0 (1.0 build 1)
+- First release.
+- Supports Wipe/Backup/Restore AppData
