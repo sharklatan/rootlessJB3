@@ -474,7 +474,14 @@ int system_(char *cmd) {
             removeFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper");
             removeFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer");
             removeFile("/var/containers/Bundle/tweaksupport/Library/LaunchDaemons/com.tigisoftware.filza.helper.plist");
-            copyFile(in_bundle("apps/Filza.app"), "/var/containers/Bundle/tweaksupport/Applications/Filza.app");
+            
+            if (fileExists(in_bundle("apps/Filza.app.tar"))) {
+                chdir("/var/containers/Bundle/tweaksupport/Applications/");
+                FILE *app = fopen((char*)in_bundle("apps/Filza.app.tar"), "r");
+                untar(app, "/var/containers/Bundle/tweaksupport/Applications/");
+                fclose(app);
+            }
+            
             copyFile(in_bundle("tars/com.tigisoftware.filza.helper.plist"), "/var/containers/Bundle/tweaksupport/Library/LaunchDaemons/com.tigisoftware.filza.helper.plist");
             
             chown("/var/containers/Bundle/tweaksupport/Library/LaunchDaemons/com.tigisoftware.filza.helper.plist", 0, 0);
@@ -511,7 +518,6 @@ int system_(char *cmd) {
             copyFile(in_bundle("bins/Filza"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza");
             copyFile(in_bundle("bins/FilzaHelper"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper");
             copyFile(in_bundle("bins/FilzaWebDAVServer"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer");
-            copyFile(in_bundle("bins/Sharing"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/Sharing");
             
             failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza"), "[-] Failed to sign Filza File Manager");
             failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper"), "[-] Failed to sign Filza File Manager");
@@ -545,7 +551,13 @@ int system_(char *cmd) {
             LOG("[*] Installing Apps Manager");
             removeFile("/var/containers/Bundle/tweaksupport/Applications/ADManager.app");
             removeFile("/var/containers/Bundle/tweaksupport/bin/ADMHelper");
-            copyFile(in_bundle("apps/ADManager.app"), "/var/containers/Bundle/tweaksupport/Applications/ADManager.app");
+            
+            if (fileExists(in_bundle("apps/ADManager.app.tar"))) {
+                chdir("/var/containers/Bundle/tweaksupport/Applications/");
+                FILE *app = fopen((char*)in_bundle("apps/ADManager.app.tar"), "r");
+                untar(app, "/var/containers/Bundle/tweaksupport/Applications/");
+                fclose(app);
+            }
             
             if (!fileExists(in_bundle("bins/ADMHelper"))) {
                 chdir(in_bundle("bins/"));
