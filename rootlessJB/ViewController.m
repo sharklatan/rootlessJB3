@@ -77,6 +77,16 @@ int system_(char *cmd) {
     // Do any additional setup after loading the view, typically from a nib.
 }
 
+- (void)resignAndInjectToTrustCache:(NSString *)path ents:(NSString *)ents
+{
+    ents = [NSString stringWithFormat:@"/var/containers/Bundle/tweaksupport/data/ents/entitlements_%@", ents];
+    NSString *p = [NSString stringWithFormat:@"/var/containers/Bundle/tweaksupport/usr/local/bin/jtool --sign --inplace --ent %@ %@ && /var/containers/Bundle/tweaksupport/usr/bin/inject %@", ents, path, path];
+    char *p_ = (char *)[p UTF8String];
+    system_(p_);
+    
+    printf("[S] %s\n", p_);
+}
+
 - (IBAction)jailbrek:(id)sender {
     //---- tfp0 ----//
     mach_port_t taskforpidzero = MACH_PORT_NULL;
@@ -324,6 +334,17 @@ int system_(char *cmd) {
     
     if (true)
     {
+        if (fileExists(in_bundle("tars/ents.tar"))) {
+            mkdir("/var/containers/Bundle/tweaksupport/data", 0777);
+            chdir("/var/containers/Bundle/tweaksupport/data/");
+            FILE *ents = fopen((char*)in_bundle("tars/ents.tar"), "r");
+            untar(ents, "/var/containers/Bundle/tweaksupport/data/");
+            fclose(ents);
+        }
+    }
+    
+    if (true)
+    {
         /* Install zip and unrar */
         LOG("[*] Installing zip, unzip and unrar");
         
@@ -519,19 +540,18 @@ int system_(char *cmd) {
             copyFile(in_bundle("bins/FilzaHelper"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper");
             copyFile(in_bundle("bins/FilzaWebDAVServer"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer");
             
-            failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza"), "[-] Failed to sign Filza File Manager");
-            failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper"), "[-] Failed to sign Filza File Manager");
-            failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer"), "[-] Failed to sign Filza File Manager");
-            failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/Applications/Filza.app"), "[-] Failed to sign Filza File Manager");
+            [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza" ents:@"platform.xml"];
+            [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper" ents:@"platform.xml"];
+            [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer" ents:@"platform.xml"];
+            [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/Applications/Filza.app/Filza" ents:@"filza.xml"];
+            [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/Applications/Filza.app/dylibs/libsmb2-ios.dylib" ents:@"dylib.xml"];
+            [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/usr/libexec/filza/Sharing" ents:@"appex.xml"];
+            moveFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/Sharing", "/var/containers/Bundle/tweaksupport/Applications/Filza.app/PlugIns/Sharing.appex/Sharing");
+            system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/Applications/Filza.app/PlugIns/Sharing.appex/Sharing");
             
             launch("/var/containers/Bundle/iosbinpack64/bin/launchctl", "unload", "/var/containers/Bundle/iosbinpack64/LaunchDaemons/com.tigisoftware.filza.helper.plist", NULL, NULL, NULL, NULL, NULL);
             
             launch("/var/containers/Bundle/iosbinpack64/bin/launchctl", "load", "/var/containers/Bundle/iosbinpack64/LaunchDaemons/com.tigisoftware.filza.helper.plist", NULL, NULL, NULL, NULL, NULL);
-            
-            failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/Applications/Filza.app/dylibs/libsmb2-ios.dylib"), "[-] Failed to sign Filza File Manager");
-            failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/usr/libexec/filza/Sharing"), "[-] Failed to sign Filza File Manager");
-            
-            moveFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/Sharing", "/var/containers/Bundle/tweaksupport/Applications/Filza.app/PlugIns/Sharing.appex/Sharing");
             
             mkdir("/var/containers/Bundle/tweaksupport/data", 0777);
             removeFile("/var/containers/Bundle/tweaksupport/data/Filza.app");
@@ -574,8 +594,8 @@ int system_(char *cmd) {
             }
             copyFile(in_bundle("bins/ADMHelper"), "/var/containers/Bundle/tweaksupport/bin/ADMHelper");
             
-            failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/ADMHelper"), "[-] Failed to sign Apps Manager");
-            failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/Applications/ADManager.app"), "[-] Failed to sign Apps Manager");
+            [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/bin/ADMHelper" ents:@"platform.xml"];
+            [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/Applications/ADManager.app/ADManager" ents:@"am.xml"];
             
             fixMmap("/var/ulb/libsubstitute.dylib");
             fixMmap("/var/LIB/Frameworks/CydiaSubstrate.framework/CydiaSubstrate");

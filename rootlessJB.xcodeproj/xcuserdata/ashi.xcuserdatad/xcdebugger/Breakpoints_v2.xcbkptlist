@@ -10,11 +10,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "rootlessJB/ViewController.m"
-            timestampString = "571208939.690289"
+            timestampString = "571323124.132621"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "485"
-            endingLineNumber = "485"
+            startingLineNumber = "506"
+            endingLineNumber = "506"
             landmarkName = "-jailbrek:"
             landmarkType = "7">
          </BreakpointContent>
