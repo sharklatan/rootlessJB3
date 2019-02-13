@@ -15,16 +15,18 @@
 #import "exploit/voucher_swap/kernel_slide.h"
 #import "insert_dylib.h"
 #import "vnode.h"
+#import "exploit/v3ntex/exploit.h"
 
 #import <mach/mach.h>
 #import <sys/stat.h>
+#import <sys/utsname.h>
+#import <dlfcn.h>
 
 @interface ViewController ()
 @property (weak, nonatomic) IBOutlet UISwitch *enableTweaks;
 @property (weak, nonatomic) IBOutlet UIButton *jailbreakButton;
 @property (weak, nonatomic) IBOutlet UISwitch *installiSuperSU;
-@property (weak, nonatomic) IBOutlet UISwitch *installAppsManager;
-@property (weak, nonatomic) IBOutlet UISwitch *installFilzaFileManager;
+@property (weak, nonatomic) IBOutlet UISwitch *installFilzaAndAM;
 
 @property (weak, nonatomic) IBOutlet UITextView *logs;
 @end
@@ -44,6 +46,7 @@ printf("\t"what"\n", ##__VA_ARGS__)
 LOG(message);\
 goto end;\
 }
+
 #define maxVersion(v)  ([[[UIDevice currentDevice] systemVersion] compare:@v options:NSNumericSearch] != NSOrderedDescending)
 
 
@@ -72,9 +75,14 @@ int system_(char *cmd) {
     return launch("/var/bin/bash", "-c", cmd, NULL, NULL, NULL, NULL, NULL);
 }
 
+struct utsname u;
+vm_size_t psize;
+
 - (void)viewDidLoad {
     [super viewDidLoad];
-    // Do any additional setup after loading the view, typically from a nib.
+    uname(&u);
+    if (strstr(u.machine, "iPad5,")) psize = 0x1000;
+    else _host_page_size(mach_host_self(), &psize);
 }
 
 - (void)resignAndInjectToTrustCache:(NSString *)path ents:(NSString *)ents
@@ -87,9 +95,9 @@ int system_(char *cmd) {
     printf("[S] %s\n", p_);
 }
 
-- (IBAction)jailbrek:(id)sender {
+- (IBAction)jailbreak:(id)sender {
     //---- tfp0 ----//
-    mach_port_t taskforpidzero = MACH_PORT_NULL;
+    __block mach_port_t taskforpidzero = MACH_PORT_NULL;
     
     uint64_t sb = 0;
     BOOL debug = NO; // kids don't enable this
@@ -104,7 +112,23 @@ int system_(char *cmd) {
             printf("[-] Error using hgsp! '%s'\n", mach_error_string(ret));
             printf("[*] Using exploit!\n");
             
-            if (maxVersion("12.1.2")) {
+            if (psize == 0x1000 && maxVersion("12.1.2")) {
+                
+                // v3ntex is so bad we have to treat it specially for it not to freak out
+                dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0);
+                dispatch_group_t group = dispatch_group_create();
+                dispatch_semaphore_t sm = dispatch_semaphore_create(0);
+                
+                dispatch_group_async(group, queue, ^{
+                    sleep(5);
+                    taskforpidzero = v3ntex();
+                    dispatch_semaphore_signal(sm);
+                });
+                
+                dispatch_semaphore_wait(sm, DISPATCH_TIME_FOREVER);
+            }
+            
+            else if (maxVersion("12.1.2")) {
                 taskforpidzero = voucher_swap();
             }
             else {
@@ -121,7 +145,22 @@ int system_(char *cmd) {
         }
     }
     else {
-        if (maxVersion("12.1.2")) {
+        if (psize == 0x1000 && maxVersion("12.1.2")) {
+            
+            // v3ntex is so bad we have to treat it specially for it not to freak out
+            dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0);
+            dispatch_group_t group = dispatch_group_create();
+            dispatch_semaphore_t sm = dispatch_semaphore_create(0);
+            
+            dispatch_group_async(group, queue, ^{
+                taskforpidzero = v3ntex();
+                dispatch_semaphore_signal(sm);
+            });
+            
+            dispatch_semaphore_wait(sm, DISPATCH_TIME_FOREVER);
+        }
+        
+        else if (maxVersion("12.1.2")) {
             taskforpidzero = voucher_swap();
         }
         else {
@@ -136,11 +175,13 @@ int system_(char *cmd) {
             return;
         }
     }
-    
     LOG("[*] Starting fun");
     
-    kernel_slide_init();
-    init_with_kbase(taskforpidzero, 0xfffffff007004000 + kernel_slide);
+    if (!KernelBase) {
+        kernel_slide_init();
+        init_with_kbase(taskforpidzero, 0xfffffff007004000 + kernel_slide);
+    }
+    else init_with_kbase(taskforpidzero, KernelBase);
     
     LOG("[i] Kernel base: 0x%llx", KernelBase);
     
@@ -237,8 +278,7 @@ int system_(char *cmd) {
     
     //---- update jailbreakd ----//
     
-    removeFile("/var/containers/Bundle/tweaksupport/bin/jailbreakd");
-    
+    removeFile("/var/containers/Bundle/iosbinpack64/bin/jailbreakd");
     if (!fileExists(in_bundle("bins/jailbreakd"))) {
         chdir(in_bundle("bins/"));
         
@@ -248,8 +288,33 @@ int system_(char *cmd) {
         
         removeFile(in_bundle("bins/jailbreakd.tar"));
     }
-    
     copyFile(in_bundle("bins/jailbreakd"), "/var/containers/Bundle/iosbinpack64/bin/jailbreakd");
+    
+    removeFile("/var/containers/Bundle/iosbinpack64/pspawn.dylib");
+    if (!fileExists(in_bundle("bins/pspawn.dylib"))) {
+        chdir(in_bundle("bins/"));
+        
+        FILE *jbd = fopen(in_bundle("bins/pspawn.dylib.tar"), "r");
+        untar(jbd, in_bundle("bins/pspawn.dylib"));
+        fclose(jbd);
+        
+        removeFile(in_bundle("bins/pspawn.dylib.tar"));
+    }
+    copyFile(in_bundle("bins/pspawn.dylib"), "/var/containers/Bundle/iosbinpack64/pspawn.dylib");
+    
+    removeFile("/var/containers/Bundle/tweaksupport/usr/lib/TweakInject.dylib");
+    if (!fileExists(in_bundle("bins/TweakInject.dylib"))) {
+        chdir(in_bundle("bins/"));
+        
+        FILE *jbd = fopen(in_bundle("bins/TweakInject.tar"), "r");
+        untar(jbd, in_bundle("bins/TweakInject.dylib"));
+        fclose(jbd);
+        
+        removeFile(in_bundle("bins/TweakInject.tar"));
+    }
+    copyFile(in_bundle("bins/TweakInject.dylib"), "/var/containers/Bundle/tweaksupport/usr/lib/TweakInject.dylib");
+    
+    removeFile("/var/log/pspawn_payload_xpcproxy.log");
     
     //---- codesign patch ----//
     
@@ -368,6 +433,7 @@ int system_(char *cmd) {
     }
     
     if (self.enableTweaks.isOn) {
+        
         //----- magic start here -----//
         LOG("[*] Time for magic");
         
@@ -485,124 +551,123 @@ int system_(char *cmd) {
             failIf(launch("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL), "[-] Failed to install iSuperSU");
         }
         
-        if ([self.installFilzaFileManager isOn])
-        {
-            LOG("[*] Installing Filza File Manager");
-            mkdir("/var/containers/Bundle/tweaksupport/usr/libexec/filza", 0777);
-            chown("/var/containers/Bundle/tweaksupport/usr/libexec/filza", 0, 0);
-            removeFile("/var/containers/Bundle/tweaksupport/Applications/Filza.app");
-            removeFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza");
-            removeFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper");
-            removeFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer");
-            removeFile("/var/containers/Bundle/tweaksupport/Library/LaunchDaemons/com.tigisoftware.filza.helper.plist");
-            
-            if (fileExists(in_bundle("apps/Filza.app.tar"))) {
-                chdir("/var/containers/Bundle/tweaksupport/Applications/");
-                FILE *app = fopen((char*)in_bundle("apps/Filza.app.tar"), "r");
-                untar(app, "/var/containers/Bundle/tweaksupport/Applications/");
-                fclose(app);
+        if ([self.installFilzaAndAM isOn]) {
+            // Install Filza
+            if (true) {
+                LOG("[*] Installing Filza File Manager");
+                mkdir("/var/containers/Bundle/tweaksupport/usr/libexec/filza", 0777);
+                chown("/var/containers/Bundle/tweaksupport/usr/libexec/filza", 0, 0);
+                removeFile("/var/containers/Bundle/tweaksupport/Applications/Filza.app");
+                removeFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza");
+                removeFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper");
+                removeFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer");
+                removeFile("/var/containers/Bundle/tweaksupport/Library/LaunchDaemons/com.tigisoftware.filza.helper.plist");
+                
+                if (fileExists(in_bundle("apps/Filza.app.tar"))) {
+                    chdir("/var/containers/Bundle/tweaksupport/Applications/");
+                    FILE *app = fopen((char*)in_bundle("apps/Filza.app.tar"), "r");
+                    untar(app, "/var/containers/Bundle/tweaksupport/Applications/");
+                    fclose(app);
+                }
+                
+                copyFile(in_bundle("tars/com.tigisoftware.filza.helper.plist"), "/var/containers/Bundle/tweaksupport/Library/LaunchDaemons/com.tigisoftware.filza.helper.plist");
+                
+                chown("/var/containers/Bundle/tweaksupport/Library/LaunchDaemons/com.tigisoftware.filza.helper.plist", 0, 0);
+                
+                if (!fileExists(in_bundle("bins/Filza"))) {
+                    chdir(in_bundle("bins/"));
+                    
+                    FILE *f1 = fopen(in_bundle("bins/Filza.tar"), "r");
+                    untar(f1, in_bundle("bins/Filza"));
+                    fclose(f1);
+                    
+                    f1 = fopen(in_bundle("bins/FilzaHelper.tar"), "r");
+                    untar(f1, in_bundle("bins/FilzaHelper"));
+                    fclose(f1);
+                    
+                    f1 = fopen(in_bundle("bins/FilzaWebDAVServer.tar"), "r");
+                    untar(f1, in_bundle("bins/FilzaWebDAVServer"));
+                    fclose(f1);
+                    
+                    
+                    chown(in_bundle("bins/Filza"), 0, 0);
+                    chown(in_bundle("bins/FilzaHelper"), 0, 0);
+                    chown(in_bundle("bins/FilzaWebDAVServer"), 0, 0);
+                    NSUInteger perm = S_ISUID | S_ISGID | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+                    chmod(in_bundle("bins/Filza"), perm);
+                    chmod(in_bundle("bins/FilzaHelper"), 0777);
+                    chmod(in_bundle("bins/FilzaWebDAVServer"), 0777);
+                    
+                    removeFile(in_bundle("bins/Filza.tar"));
+                    removeFile(in_bundle("bins/FilzaHelper.tar"));
+                    removeFile(in_bundle("bins/FilzaWebDAVServer.tar"));
+                }
+                moveFile("/var/containers/Bundle/tweaksupport/Applications/Filza.app/PlugIns/Sharing.appex/Sharing", "/var/containers/Bundle/tweaksupport/usr/libexec/filza/Sharing");
+                copyFile(in_bundle("bins/Filza"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza");
+                copyFile(in_bundle("bins/FilzaHelper"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper");
+                copyFile(in_bundle("bins/FilzaWebDAVServer"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer");
+                
+                [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza" ents:@"platform.xml"];
+                [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper" ents:@"platform.xml"];
+                [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer" ents:@"platform.xml"];
+                [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/Applications/Filza.app/Filza" ents:@"filza.xml"];
+                [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/Applications/Filza.app/dylibs/libsmb2-ios.dylib" ents:@"dylib.xml"];
+                [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/usr/libexec/filza/Sharing" ents:@"appex.xml"];
+                moveFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/Sharing", "/var/containers/Bundle/tweaksupport/Applications/Filza.app/PlugIns/Sharing.appex/Sharing");
+                system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/Applications/Filza.app/PlugIns/Sharing.appex/Sharing");
+                
+                launch("/var/containers/Bundle/iosbinpack64/bin/launchctl", "unload", "/var/containers/Bundle/iosbinpack64/LaunchDaemons/com.tigisoftware.filza.helper.plist", NULL, NULL, NULL, NULL, NULL);
+                
+                launch("/var/containers/Bundle/iosbinpack64/bin/launchctl", "load", "/var/containers/Bundle/iosbinpack64/LaunchDaemons/com.tigisoftware.filza.helper.plist", NULL, NULL, NULL, NULL, NULL);
+                
+                mkdir("/var/containers/Bundle/tweaksupport/data", 0777);
+                removeFile("/var/containers/Bundle/tweaksupport/data/Filza.app");
+                copyFile("/var/containers/Bundle/tweaksupport/Applications/Filza.app", "/var/containers/Bundle/tweaksupport/data/Filza.app");
+                
+                // just in case
+                fixMmap("/var/ulb/libsubstitute.dylib");
+                fixMmap("/var/LIB/Frameworks/CydiaSubstrate.framework/CydiaSubstrate");
+                fixMmap("/var/LIB/MobileSubstrate/DynamicLibraries/AppSyncUnified.dylib");
+                
+                failIf(launch("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL), "[-] Failed to install Filza File Manager");
             }
-            
-            copyFile(in_bundle("tars/com.tigisoftware.filza.helper.plist"), "/var/containers/Bundle/tweaksupport/Library/LaunchDaemons/com.tigisoftware.filza.helper.plist");
-            
-            chown("/var/containers/Bundle/tweaksupport/Library/LaunchDaemons/com.tigisoftware.filza.helper.plist", 0, 0);
-            
-            if (!fileExists(in_bundle("bins/Filza"))) {
-                chdir(in_bundle("bins/"));
+            if (true) {
+                // Install AM
+                LOG("[*] Installing Apps Manager");
+                removeFile("/var/containers/Bundle/tweaksupport/Applications/ADManager.app");
+                removeFile("/var/containers/Bundle/tweaksupport/bin/ADMHelper");
                 
-                FILE *f1 = fopen(in_bundle("bins/Filza.tar"), "r");
-                untar(f1, in_bundle("bins/Filza"));
-                fclose(f1);
+                if (fileExists(in_bundle("apps/ADManager.app.tar"))) {
+                    chdir("/var/containers/Bundle/tweaksupport/Applications/");
+                    FILE *app = fopen((char*)in_bundle("apps/ADManager.app.tar"), "r");
+                    untar(app, "/var/containers/Bundle/tweaksupport/Applications/");
+                    fclose(app);
+                }
                 
-                f1 = fopen(in_bundle("bins/FilzaHelper.tar"), "r");
-                untar(f1, in_bundle("bins/FilzaHelper"));
-                fclose(f1);
+                if (!fileExists(in_bundle("bins/ADMHelper"))) {
+                    chdir(in_bundle("bins/"));
+                    
+                    FILE *f1 = fopen(in_bundle("bins/ADMHelper.tar"), "r");
+                    untar(f1, in_bundle("bins/ADMHelper"));
+                    fclose(f1);
+                    
+                    chown(in_bundle("bins/ADMHelper"), 0, 0);//chown root /usr/bin/ADMHelper
+                    NSUInteger perm = S_ISUID | S_ISGID | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+                    chmod(in_bundle("bins/ADMHelper"), perm);//chmod ug+s /usr/bin/ADMHelper
+                    
+                    removeFile(in_bundle("bins/ADMHelper.tar"));
+                }
+                copyFile(in_bundle("bins/ADMHelper"), "/var/containers/Bundle/tweaksupport/bin/ADMHelper");
                 
-                f1 = fopen(in_bundle("bins/FilzaWebDAVServer.tar"), "r");
-                untar(f1, in_bundle("bins/FilzaWebDAVServer"));
-                fclose(f1);
+                [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/bin/ADMHelper" ents:@"platform.xml"];
+                [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/Applications/ADManager.app/ADManager" ents:@"am.xml"];
                 
+                fixMmap("/var/ulb/libsubstitute.dylib");
+                fixMmap("/var/LIB/Frameworks/CydiaSubstrate.framework/CydiaSubstrate");
+                fixMmap("/var/LIB/MobileSubstrate/DynamicLibraries/AppSyncUnified.dylib");
                 
-                chown(in_bundle("bins/Filza"), 0, 0);
-                chown(in_bundle("bins/FilzaHelper"), 0, 0);
-                chown(in_bundle("bins/FilzaWebDAVServer"), 0, 0);
-                NSUInteger perm = S_ISUID | S_ISGID | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
-                chmod(in_bundle("bins/Filza"), perm);
-                chmod(in_bundle("bins/FilzaHelper"), 0777);
-                chmod(in_bundle("bins/FilzaWebDAVServer"), 0777);
-                
-                removeFile(in_bundle("bins/Filza.tar"));
-                removeFile(in_bundle("bins/FilzaHelper.tar"));
-                removeFile(in_bundle("bins/FilzaWebDAVServer.tar"));
+                failIf(launch("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL), "[-] Failed to install Apps Manager");
             }
-            moveFile("/var/containers/Bundle/tweaksupport/Applications/Filza.app/PlugIns/Sharing.appex/Sharing", "/var/containers/Bundle/tweaksupport/usr/libexec/filza/Sharing");
-            copyFile(in_bundle("bins/Filza"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza");
-            copyFile(in_bundle("bins/FilzaHelper"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper");
-            copyFile(in_bundle("bins/FilzaWebDAVServer"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer");
-            
-            [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza" ents:@"platform.xml"];
-            [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper" ents:@"platform.xml"];
-            [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer" ents:@"platform.xml"];
-            [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/Applications/Filza.app/Filza" ents:@"filza.xml"];
-            [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/Applications/Filza.app/dylibs/libsmb2-ios.dylib" ents:@"dylib.xml"];
-            [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/usr/libexec/filza/Sharing" ents:@"appex.xml"];
-            moveFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/Sharing", "/var/containers/Bundle/tweaksupport/Applications/Filza.app/PlugIns/Sharing.appex/Sharing");
-            system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/Applications/Filza.app/PlugIns/Sharing.appex/Sharing");
-            
-            launch("/var/containers/Bundle/iosbinpack64/bin/launchctl", "unload", "/var/containers/Bundle/iosbinpack64/LaunchDaemons/com.tigisoftware.filza.helper.plist", NULL, NULL, NULL, NULL, NULL);
-            
-            launch("/var/containers/Bundle/iosbinpack64/bin/launchctl", "load", "/var/containers/Bundle/iosbinpack64/LaunchDaemons/com.tigisoftware.filza.helper.plist", NULL, NULL, NULL, NULL, NULL);
-            
-            mkdir("/var/containers/Bundle/tweaksupport/data", 0777);
-            removeFile("/var/containers/Bundle/tweaksupport/data/Filza.app");
-            copyFile("/var/containers/Bundle/tweaksupport/Applications/Filza.app", "/var/containers/Bundle/tweaksupport/data/Filza.app");
-            
-            // just in case
-            fixMmap("/var/ulb/libsubstitute.dylib");
-            fixMmap("/var/LIB/Frameworks/CydiaSubstrate.framework/CydiaSubstrate");
-            fixMmap("/var/LIB/MobileSubstrate/DynamicLibraries/AppSyncUnified.dylib");
-            
-            failIf(launch("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL), "[-] Failed to install Filza File Manager");
-            
-        }
-        
-        if ([self.installAppsManager isOn])
-        {
-            LOG("[*] Installing Apps Manager");
-            removeFile("/var/containers/Bundle/tweaksupport/Applications/ADManager.app");
-            removeFile("/var/containers/Bundle/tweaksupport/bin/ADMHelper");
-            
-            if (fileExists(in_bundle("apps/ADManager.app.tar"))) {
-                chdir("/var/containers/Bundle/tweaksupport/Applications/");
-                FILE *app = fopen((char*)in_bundle("apps/ADManager.app.tar"), "r");
-                untar(app, "/var/containers/Bundle/tweaksupport/Applications/");
-                fclose(app);
-            }
-            
-            if (!fileExists(in_bundle("bins/ADMHelper"))) {
-                chdir(in_bundle("bins/"));
-                
-                FILE *f1 = fopen(in_bundle("bins/ADMHelper.tar"), "r");
-                untar(f1, in_bundle("bins/ADMHelper"));
-                fclose(f1);
-                
-                chown(in_bundle("bins/ADMHelper"), 0, 0);//chown root /usr/bin/ADMHelper
-                NSUInteger perm = S_ISUID | S_ISGID | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
-                chmod(in_bundle("bins/ADMHelper"), perm);//chmod ug+s /usr/bin/ADMHelper
-                
-                removeFile(in_bundle("bins/ADMHelper.tar"));
-            }
-            copyFile(in_bundle("bins/ADMHelper"), "/var/containers/Bundle/tweaksupport/bin/ADMHelper");
-            
-            [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/bin/ADMHelper" ents:@"platform.xml"];
-            [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/Applications/ADManager.app/ADManager" ents:@"am.xml"];
-            
-            fixMmap("/var/ulb/libsubstitute.dylib");
-            fixMmap("/var/LIB/Frameworks/CydiaSubstrate.framework/CydiaSubstrate");
-            fixMmap("/var/LIB/MobileSubstrate/DynamicLibraries/AppSyncUnified.dylib");
-            
-            failIf(launch("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL), "[-] Failed to install Apps Manager");
-            
         }
         
         LOG("[+] Really jailbroken!");
@@ -640,7 +705,7 @@ end:;
 }
 - (IBAction)uninstall:(id)sender {
     //---- tfp0 ----//
-    mach_port_t taskforpidzero = MACH_PORT_NULL;
+    __block mach_port_t taskforpidzero = MACH_PORT_NULL;
     
     uint64_t sb = 0;
     BOOL debug = NO; // kids don't enable this
@@ -653,11 +718,28 @@ end:;
             printf("[-] Error using hgsp! '%s'\n", mach_error_string(ret));
             printf("[*] Using exploit!\n");
             
-            if (maxVersion("12.1.2")) {
+            if (psize == 0x1000 && maxVersion("12.1.2")) {
+                
+                // v3ntex is so bad we have to treat it specially for it not to freak out
+                dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0);
+                dispatch_group_t group = dispatch_group_create();
+                dispatch_semaphore_t sm = dispatch_semaphore_create(0);
+                
+                dispatch_group_async(group, queue, ^{
+                    taskforpidzero = v3ntex();
+                    dispatch_semaphore_signal(sm);
+                });
+                
+                dispatch_semaphore_wait(sm, DISPATCH_TIME_FOREVER);
+            }
+            
+            else if (maxVersion("12.1.2")) {
                 taskforpidzero = voucher_swap();
             }
             else {
-                
+                [sender setTitle:@"Not supported!" forState:UIControlStateNormal];
+                [sender setEnabled:false];
+                return;
             }
             
             if (!MACH_PORT_VALID(taskforpidzero)) {
@@ -669,11 +751,28 @@ end:;
         }
     }
     else {
-        if (maxVersion("12.1.2")) {
+        if (psize == 0x1000 && maxVersion("12.1.2")) {
+            
+            // v3ntex is so bad we have to treat it specially for it not to freak out
+            dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0);
+            dispatch_group_t group = dispatch_group_create();
+            dispatch_semaphore_t sm = dispatch_semaphore_create(0);
+            
+            dispatch_group_async(group, queue, ^{
+                taskforpidzero = v3ntex();
+                dispatch_semaphore_signal(sm);
+            });
+            
+            dispatch_semaphore_wait(sm, DISPATCH_TIME_FOREVER);
+        }
+        
+        else if (maxVersion("12.1.2")) {
             taskforpidzero = voucher_swap();
         }
         else {
-            
+            [sender setTitle:@"Not supported!" forState:UIControlStateNormal];
+            [sender setEnabled:false];
+            return;
         }
         
         if (!MACH_PORT_VALID(taskforpidzero)) {
@@ -685,13 +784,11 @@ end:;
     }
     LOG("[*] Starting fun");
     
-    if (!maxVersion("11.4.1") && maxVersion("12.1.2")) {
+    if (!KernelBase) {
         kernel_slide_init();
         init_with_kbase(taskforpidzero, 0xfffffff007004000 + kernel_slide);
     }
-    else if (maxVersion("11.3.1")) {
-        init_jelbrek(taskforpidzero);
-    }
+    else init_with_kbase(taskforpidzero, KernelBase);
     
     LOG("[i] Kernel base: 0x%llx", KernelBase);
     
@@ -733,6 +830,7 @@ end:;
     removeFile("/var/log/testbin.log");
     removeFile("/var/log/jailbreakd-stdout.log");
     removeFile("/var/log/jailbreakd-stderr.log");
+    removeFile("/var/log/pspawn_payload_xpcproxy.log");
     removeFile("/var/containers/Bundle/.installed_rootlessJB3");
     
 end:;
