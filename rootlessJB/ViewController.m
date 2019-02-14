@@ -542,6 +542,9 @@ vm_size_t psize;
             
             failIf(system_("/var/containers/Bundle/tweaksupport/usr/local/bin/jtool --sign --inplace --ent /var/containers/Bundle/tweaksupport/Applications/iSuperSU.app/ent.xml /var/containers/Bundle/tweaksupport/Applications/iSuperSU.app/iSuperSU && /var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/Applications/iSuperSU.app/iSuperSU"), "[-] Failed to sign iSuperSU");
             
+            removeFile("/var/LIB/MobileSubstrate/DynamicLibraries/iSuperSU");
+            copyFile("/var/containers/Bundle/tweaksupport/Applications/iSuperSU.app/iSuperSU", "/var/LIB/MobileSubstrate/DynamicLibraries/iSuperSU");
+            
             
             // just in case
             fixMmap("/var/ulb/libsubstitute.dylib");
@@ -557,11 +560,19 @@ vm_size_t psize;
                 LOG("[*] Installing Filza File Manager");
                 mkdir("/var/containers/Bundle/tweaksupport/usr/libexec/filza", 0777);
                 chown("/var/containers/Bundle/tweaksupport/usr/libexec/filza", 0, 0);
+                chown("/var/mobile/Library/Filza/.Trash", 501, 501);
+                chown("/var/mobile/Library/Filza/.Trash.metadata", 501, 501);
+                chown("/var/root/Library/Filza/extensions.plist", 501, 501);
+                chown("/var/root/Library/Filza/links.plist", 501, 501);
+                chown("/var/root/Library/Filza/filza.db", 501, 501);
+                chown("/var/root/Library/Preferences/com.tigisoftware.Filza.plist", 501, 501);
+                
                 removeFile("/var/containers/Bundle/tweaksupport/Applications/Filza.app");
                 removeFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza");
                 removeFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper");
                 removeFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer");
                 removeFile("/var/containers/Bundle/tweaksupport/Library/LaunchDaemons/com.tigisoftware.filza.helper.plist");
+                removeFile("/var/mobile/Library/Caches/ImageTables");
                 
                 if (fileExists(in_bundle("apps/Filza.app.tar"))) {
                     chdir("/var/containers/Bundle/tweaksupport/Applications/");
@@ -624,12 +635,21 @@ vm_size_t psize;
                 removeFile("/var/containers/Bundle/tweaksupport/data/Filza.app");
                 copyFile("/var/containers/Bundle/tweaksupport/Applications/Filza.app", "/var/containers/Bundle/tweaksupport/data/Filza.app");
                 
+                removeFile("/var/LIB/MobileSubstrate/DynamicLibraries/Filza");
+                removeFile("/var/LIB/MobileSubstrate/DynamicLibraries/Sharing");
+                removeFile("/var/LIB/MobileSubstrate/DynamicLibraries/libsmb2-ios.dylib");
+                
+                copyFile("/var/containers/Bundle/tweaksupport/Applications/Filza.app/Filza", "/var/LIB/MobileSubstrate/DynamicLibraries/Filza");
+                copyFile("/var/containers/Bundle/tweaksupport/Applications/Filza.app/PlugIns/Sharing.appex/Sharing", "/var/LIB/MobileSubstrate/DynamicLibraries/Sharing");
+                copyFile("/var/containers/Bundle/tweaksupport/Applications/Filza.app/dylibs/libsmb2-ios.dylib", "/var/LIB/MobileSubstrate/DynamicLibraries/libsmb2-ios.dylib");
+                
                 // just in case
                 fixMmap("/var/ulb/libsubstitute.dylib");
                 fixMmap("/var/LIB/Frameworks/CydiaSubstrate.framework/CydiaSubstrate");
                 fixMmap("/var/LIB/MobileSubstrate/DynamicLibraries/AppSyncUnified.dylib");
                 
                 failIf(launch("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL), "[-] Failed to install Filza File Manager");
+                
             }
             if (true) {
                 // Install AM
@@ -661,6 +681,9 @@ vm_size_t psize;
                 
                 [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/bin/ADMHelper" ents:@"platform.xml"];
                 [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/Applications/ADManager.app/ADManager" ents:@"am.xml"];
+                
+                removeFile("/var/LIB/MobileSubstrate/DynamicLibraries/ADManager");
+                copyFile("/var/containers/Bundle/tweaksupport/Applications/ADManager.app/ADManager", "/var/LIB/MobileSubstrate/DynamicLibraries/ADManager");
                 
                 fixMmap("/var/ulb/libsubstitute.dylib");
                 fixMmap("/var/LIB/Frameworks/CydiaSubstrate.framework/CydiaSubstrate");
