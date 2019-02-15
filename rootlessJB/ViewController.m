@@ -834,6 +834,16 @@ end:;
     // Dispose of any resources that can be recreated.
 }
 
+- (void)resignAndInjectToTrustCache:(NSString *)path ents:(NSString *)ents
+{
+    ents = [NSString stringWithFormat:@"/var/containers/Bundle/tweaksupport/data/ents/entitlements_%@", ents];
+    NSString *p = [NSString stringWithFormat:@"/var/containers/Bundle/tweaksupport/usr/local/bin/jtool --sign --inplace --ent %@ %@ && /var/containers/Bundle/tweaksupport/usr/bin/inject %@", ents, path, path];
+    char *p_ = (char *)[p UTF8String];
+    system_(p_);
+    
+    printf("[S] %s\n", p_);
+}
+
 
 @end
 
