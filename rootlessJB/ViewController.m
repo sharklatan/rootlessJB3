@@ -90,6 +90,7 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
         [self.jailbreakButton setEnabled:NO];
         [self.enableTweaks setEnabled:NO];
         [self.installiSuperSU setEnabled:NO];
+        [self.installFilzaAndAM setEnabled:NO];
     }
     
     uname(&u);
