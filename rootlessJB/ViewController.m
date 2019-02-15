@@ -226,9 +226,9 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
     
     //---- bootstrap ----//
     
-    BOOL forceCleanInstall=YES;
+
     
-    if (!fileExists("/var/containers/Bundle/.installed_rootlessJB3") || forceCleanInstall) {
+    if (!fileExists("/var/containers/Bundle/.installed_rootlessJB3")) {
         
         if (fileExists("/var/containers/Bundle/iosbinpack64")) {
             
