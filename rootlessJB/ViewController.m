@@ -34,9 +34,9 @@
 @implementation ViewController
 
 -(void)log:(NSString*)log {
-    dispatch_async(dispatch_get_main_queue(),^{
+    //dispatch_async(dispatch_get_main_queue(),^{
     self.logs.text = [NSString stringWithFormat:@"%@%@", self.logs.text, log];
-    });
+    //});
 }
 
 #define LOG(what, ...) [self log:[NSString stringWithFormat:@what"\n", ##__VA_ARGS__]];\
