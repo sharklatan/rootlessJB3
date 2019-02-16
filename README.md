@@ -49,6 +49,13 @@ All executables must have at least these two entitlements:
 - This is not dangerous and cannot screw you up but not likely to be unstable/buggy
 - Tweaks pre-patched for rootlessJB 1.0 and 2.0 will not work. Use new patcher script. (ldid was replaced with ldid2!)
 
+# iOS 12 - UPDATE
+- Added a modified dpkg (https://github.com/limneos/dpkg/) that automatically handles patching, moving, entitling, trusting ,app-installation and daemon injection for debs
+- Added recompiled dropbear v2018.76 customized for rootlessJB with fixed shell (still accepts --shell) , additional --path option to set ssh-exported path, correct scp paths and motd. 
+- Added recompiled ldid2, plutil, bintools (nm,strings,diff)
+- Added tweaks check on re-jailbreaking to re-enable apps and daemons
+
+
 patcher usage:
 ./patcher /path/to/deb /path/to/output_folder
 
