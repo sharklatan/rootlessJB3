@@ -22,9 +22,6 @@
 #import <sys/utsname.h>
 #import <dlfcn.h>
 
-//limneos start
-void calljailbreakd(const char *dylib);
-//limneos end
 
 @interface ViewController ()
 @property (weak, nonatomic) IBOutlet UISwitch *enableTweaks;
@@ -299,33 +296,25 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
         
         chdir("/var/containers/Bundle/");
         
-       
         //limneos end
-        
-        
         
         close(open("/var/containers/Bundle/.installed_rootlessJB3", O_CREAT));
         
         LOG("[+] Installed bootstrap!");
     }
     
+    // limneos start
     // UPDATE DROPBEAR
+    chdir("/var/containers/Bundle/");
     removeFile("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear");
+    removeFile("/var/containers/Bundle/iosbinpack64/usr/bin/scp");
     chdir("/var/containers/Bundle/");
     FILE *fixed_dropbear = fopen((char*)in_bundle("tars/dropbear.v2018.76.tar"), "r");
     untar(fixed_dropbear, "/var/containers/Bundle/");
     fclose(fixed_dropbear);
+    // limneos end
     
-    /*chdir("/var/containers/Bundle/");
-    
-    // removeFile("/var/containers/Bundle/iosbinpack64/etc/profile");
-    removeFile("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear");
-    FILE *dropbearfix = fopen((char*)in_bundle("tars/dropbear.v2018.76.tar"), "r");
-    untar(dropbearfix, "/var/containers/Bundle/");
-    fclose(dropbearfix);
-    */
-    
-    
+
     //---- for jailbreakd & amfid ----//
     failIf(dumpOffsetsToFile("/var/containers/Bundle/tweaksupport/offsets.data"), "[-] Failed to save offsets");
     
@@ -594,7 +583,7 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
                 // LOG("FOUND PLIST IN TWEAKS: %s",[afile UTF8String]);
                 NSDictionary *plist=[NSDictionary dictionaryWithContentsOfFile:[NSString stringWithFormat:@"/var/ulb/TweakInject/%@",afile]];
                 NSString *dylibPath=[afile stringByReplacingOccurrencesOfString:@".plist" withString:@".dylib"];
-                calljailbreakd((char *)[[NSString stringWithFormat:@"/var/ulb/TweakInject/%@",dylibPath] UTF8String]);
+                fixMmap((char *)[[NSString stringWithFormat:@"/var/ulb/TweakInject/%@",dylibPath] UTF8String]);
                 NSArray *executables=[[plist objectForKey:@"Filter"] objectForKey:@"Executables"];
                 //  LOG("EXECUTABLES IN PLIST : %s",[[executables description] UTF8String]);
                 //  LOG("PLIST: %s",[[plist description] UTF8String]);
@@ -625,17 +614,16 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
             }
         }
         
-        // calljailbreakd on each dylib to enable injection of them in daemons...
+        // fixMmap on each dylib to enable injection of them in daemons...
         for (NSString *afile in tweaks){
             if ([afile hasSuffix:@"dylib"]){
-                LOG("calljailbreakd on %s",[afile UTF8String]);
-                calljailbreakd((char *)[[NSString stringWithFormat:@"/var/ulb/TweakInject/%@",afile] UTF8String]);
+                LOG("fixMmap on %s",[afile UTF8String]);
+                fixMmap((char *)[[NSString stringWithFormat:@"/var/ulb/TweakInject/%@",afile] UTF8String]);
             }
         }
         
-       // calljailbreakd("/var/ulb/TweakInject.dylib");
         
-        sleep(1); //^^ bear with calljailbreakd...
+        sleep(1); //^^ bear with jailbreakd...
         
         // find which applications are jailbreak applications and inject their executable
         NSArray *applications=[[NSFileManager defaultManager] contentsOfDirectoryAtPath:@"/var/containers/Bundle/Application/" error:NULL];
@@ -681,7 +669,7 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
         for (NSString *string in [foundProcesses allObjects]){
             int procpid=pid_of_procName((char *)[string UTF8String]);
             if (procpid){
-                LOG("re-killing %s to apply calljailbreakd effect",[string UTF8String]);
+                LOG("re-killing %s to apply fixMmap effect",[string UTF8String]);
                 launch("/var/containers/Bundle/iosbinpack64/usr/bin/killall", "-9", (char *)[string UTF8String], NULL, NULL, NULL, NULL, NULL);
             }
         }
@@ -690,7 +678,7 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
         for (NSString *string in [foundProcesses allObjects]){
             int procpid=pid_of_procName((char *)[string UTF8String]);
             if (procpid){
-                LOG("re-killing %s to apply calljailbreakd effect",[string UTF8String]);
+                LOG("re-killing %s to apply fixMmap effect",[string UTF8String]);
                 launch("/var/containers/Bundle/iosbinpack64/usr/bin/killall", "-9", (char *)[string UTF8String], NULL, NULL, NULL, NULL, NULL);
             }
         }
