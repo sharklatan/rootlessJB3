@@ -554,6 +554,16 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
         
         if (installd) kill(installd, SIGKILL);
         
+        if (true) {
+            /* Temporary fix uicache */
+            launch("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+            NSArray *invalidApps = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:@"/var/Apps" error:nil];
+            for (NSString *app in invalidApps) {
+                NSString *path = [@"/var/Apps" stringByAppendingPathComponent:app];
+                removeFile([path UTF8String]);
+            }
+        }
+        
         if ([self.installiSuperSU isOn]) {
             LOG("[*] Installing iSuperSU");
             
