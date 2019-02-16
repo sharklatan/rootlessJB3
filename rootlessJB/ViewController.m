@@ -34,7 +34,9 @@
 @implementation ViewController
 
 -(void)log:(NSString*)log {
+    dispatch_async(dispatch_get_main_queue(),^{
     self.logs.text = [NSString stringWithFormat:@"%@%@", self.logs.text, log];
+    });
 }
 
 #define LOG(what, ...) [self log:[NSString stringWithFormat:@what"\n", ##__VA_ARGS__]];\
@@ -308,7 +310,6 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
     chdir("/var/containers/Bundle/");
     removeFile("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear");
     removeFile("/var/containers/Bundle/iosbinpack64/usr/bin/scp");
-    chdir("/var/containers/Bundle/");
     FILE *fixed_dropbear = fopen((char*)in_bundle("tars/dropbear.v2018.76.tar"), "r");
     untar(fixed_dropbear, "/var/containers/Bundle/");
     fclose(fixed_dropbear);
