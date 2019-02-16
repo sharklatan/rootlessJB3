@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		6425A5C42216187B005E6A93 /* calljailbreakd.c in Sources */ = {isa = PBXBuildFile; fileRef = 6425A5C32216187B005E6A93 /* calljailbreakd.c */; };
 		8207AE152154343700ABA466 /* apps in Resources */ = {isa = PBXBuildFile; fileRef = 8207AE142154343700ABA466 /* apps */; };
 		820FA9FE213589AF004E38D8 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 820FA9FD213589AF004E38D8 /* AppDelegate.m */; };
 		820FAA01213589AF004E38D8 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 820FAA00213589AF004E38D8 /* ViewController.m */; };
@@ -56,7 +55,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		6425A5C32216187B005E6A93 /* calljailbreakd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = calljailbreakd.c; sourceTree = "<group>"; };
 		8207AE142154343700ABA466 /* apps */ = {isa = PBXFileReference; lastKnownFileType = folder; name = apps; path = rootlessJB/bootstrap/apps; sourceTree = "<group>"; };
 		820FA9F9213589AF004E38D8 /* rootlessJB.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = rootlessJB.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		820FA9FC213589AF004E38D8 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -173,7 +171,6 @@
 				820FA9FD213589AF004E38D8 /* AppDelegate.m */,
 				820FA9FF213589AF004E38D8 /* ViewController.h */,
 				820FAA00213589AF004E38D8 /* ViewController.m */,
-				6425A5C32216187B005E6A93 /* calljailbreakd.c */,
 				82DAE4922208BA90005E4572 /* vnode.h */,
 				825D33912135D17E008723F8 /* jelbrekLib.h */,
 				825D33AA2136A1F7008723F8 /* libjb.h */,
@@ -424,7 +421,6 @@
 				821B7F29221333B100C8A7A4 /* offsets.c in Sources */,
 				82DAE4912208B4E7005E4572 /* insert_dylib.c in Sources */,
 				825D33B92136C284008723F8 /* offsetsDump.c in Sources */,
-				6425A5C42216187B005E6A93 /* calljailbreakd.c in Sources */,
 				CEA5D6DF220649B700075088 /* voucher_swap.c in Sources */,
 				CEA5D6DC220649B700075088 /* platform_match.c in Sources */,
 				820FA9FE213589AF004E38D8 /* AppDelegate.m in Sources */,
