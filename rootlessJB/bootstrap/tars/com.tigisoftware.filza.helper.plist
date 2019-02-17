@@ -10,7 +10,7 @@
 	<true/>
 	<key>ProgramArguments</key>
 	<array>
-		<string>/var/libexec/filza/FilzaHelper</string>
+		<string>/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper</string>
 	</array>
 	<key>MachServices</key>
 	<dict>

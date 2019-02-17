@@ -452,6 +452,41 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
     failIf(!fileExists("/var/log/testbin.log"), "[-] Failed to load launch daemons");
     failIf(!fileExists("/var/log/jailbreakd-stdout.log"), "[-] Failed to load jailbreakd");
     
+    if (true)
+    {
+        if (fileExists(in_bundle("tars/ents.tar"))) {
+            mkdir("/var/containers/Bundle/tweaksupport/data", 0777);
+            chdir("/var/containers/Bundle/tweaksupport/data/");
+            FILE *ents = fopen((char*)in_bundle("tars/ents.tar"), "r");
+            untar(ents, "/var/containers/Bundle/tweaksupport/data/");
+            fclose(ents);
+        }
+    }
+    
+    if (true)
+    {
+        /* Install zip and unrar */
+        LOG("[*] Installing zip, unzip and unrar");
+        
+        chdir("/var/containers/Bundle/tweaksupport/bin/");
+        FILE *zip = fopen((char*)in_bundle("tars/zip.tar"), "r");
+        untar(zip, "/var/containers/Bundle/tweaksupport/bin/");
+        fclose(zip);
+        
+        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/zip"), "[-] Failed to sign zip");
+        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/unzip"), "[-] Failed to sign unzip");
+        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/zipcloak"), "[-] Failed to sign zipcloak");
+        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/zipsplit"), "[-] Failed to sign zipsplit");
+        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/zipnote"), "[-] Failed to sign zipnote");
+        
+        FILE *unrar = fopen((char*)in_bundle("tars/unrar.tar"), "r");
+        untar(unrar, "/var/containers/Bundle/tweaksupport/bin/");
+        fclose(unrar);
+        
+        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/unrar"), "[-] Failed to sign unrar");
+        
+    }
+    
     if (self.enableTweaks.isOn) {
         
         //----- magic start here -----//
@@ -587,6 +622,10 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
             // Install Filza
             if (true) {
                 LOG("[*] Installing Filza File Manager");
+                if (!fileExists("/var/libexec"))
+                {
+                    symlink("/var/containers/Bundle/tweaksupport/usr/libexec", "/var/libexec");
+                }
                 mkdir("/var/containers/Bundle/tweaksupport/usr/libexec/filza", 0777);
                 chown("/var/containers/Bundle/tweaksupport/usr/libexec/filza", 0, 0);
                 chown("/var/mobile/Library/Filza/.Trash", 501, 501);
@@ -602,6 +641,7 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
                 removeFile("/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer");
                 removeFile("/var/containers/Bundle/tweaksupport/Library/LaunchDaemons/com.tigisoftware.filza.helper.plist");
                 removeFile("/var/mobile/Library/Caches/ImageTables");
+                unlink("/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza");
                 
                 if (fileExists(in_bundle("apps/Filza.app.tar"))) {
                     chdir("/var/containers/Bundle/tweaksupport/Applications/");
@@ -614,39 +654,22 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
                 
                 chown("/var/containers/Bundle/tweaksupport/Library/LaunchDaemons/com.tigisoftware.filza.helper.plist", 0, 0);
                 
-                if (!fileExists(in_bundle("bins/Filza"))) {
-                    chdir(in_bundle("bins/"));
-                    
-                    FILE *f1 = fopen(in_bundle("bins/Filza.tar"), "r");
-                    untar(f1, in_bundle("bins/Filza"));
+                if (fileExists(in_bundle("bins/FilzaBins.tar"))) {
+                    chdir("/var/containers/Bundle/tweaksupport/usr/libexec/filza/");
+                    FILE *f1 = fopen(in_bundle("bins/FilzaBins.tar"), "r");
+                    untar(f1, "/var/containers/Bundle/tweaksupport/usr/libexec/filza/");
                     fclose(f1);
                     
-                    f1 = fopen(in_bundle("bins/FilzaHelper.tar"), "r");
-                    untar(f1, in_bundle("bins/FilzaHelper"));
-                    fclose(f1);
-                    
-                    f1 = fopen(in_bundle("bins/FilzaWebDAVServer.tar"), "r");
-                    untar(f1, in_bundle("bins/FilzaWebDAVServer"));
-                    fclose(f1);
-                    
-                    
-                    chown(in_bundle("bins/Filza"), 0, 0);
-                    chown(in_bundle("bins/FilzaHelper"), 0, 0);
-                    chown(in_bundle("bins/FilzaWebDAVServer"), 0, 0);
+                    chown("/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza", 0, 0);
+                    chown("/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper", 0, 0);
+                    chown("/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer", 0, 0);
                     NSUInteger perm = S_ISUID | S_ISGID | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
-                    chmod(in_bundle("bins/Filza"), perm);
-                    chmod(in_bundle("bins/FilzaHelper"), 0777);
-                    chmod(in_bundle("bins/FilzaWebDAVServer"), 0777);
-                    
-                    removeFile(in_bundle("bins/Filza.tar"));
-                    removeFile(in_bundle("bins/FilzaHelper.tar"));
-                    removeFile(in_bundle("bins/FilzaWebDAVServer.tar"));
+                    chmod("/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza", perm);
+                    chmod("/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper", 0777);
+                    chmod("/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer", 0777);
                 }
                 moveFile("/var/containers/Bundle/tweaksupport/Applications/Filza.app/PlugIns/Sharing.appex/Sharing", "/var/containers/Bundle/tweaksupport/usr/libexec/filza/Sharing");
-                copyFile(in_bundle("bins/Filza"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza");
-                symlink("/var/bin/Filza", "/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza");
-                copyFile(in_bundle("bins/FilzaHelper"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper");
-                copyFile(in_bundle("bins/FilzaWebDAVServer"), "/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaWebDAVServer");
+                symlink("/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza", "/var/bin/Filza");
                 
                 [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/usr/libexec/filza/Filza" ents:@"platform.xml"];
                 [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/usr/libexec/filza/FilzaHelper" ents:@"platform.xml"];
@@ -659,7 +682,7 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
                 
                 launch("/var/containers/Bundle/iosbinpack64/bin/launchctl", "unload", "/var/containers/Bundle/iosbinpack64/LaunchDaemons/com.tigisoftware.filza.helper.plist", NULL, NULL, NULL, NULL, NULL);
                 
-                launch("/var/containers/Bundle/iosbinpack64/bin/launchctl", "load", "/var/containers/Bundle/iosbinpack64/LaunchDaemons/com.tigisoftware.filza.helper.plist", NULL, NULL, NULL, NULL, NULL);
+                launch("/var/containers/Bundle/iosbinpack64/bin/launchctl", "load", "-w", "/var/containers/Bundle/iosbinpack64/LaunchDaemons/com.tigisoftware.filza.helper.plist", NULL, NULL, NULL, NULL);
                 
                 mkdir("/var/containers/Bundle/tweaksupport/data", 0777);
                 removeFile("/var/containers/Bundle/tweaksupport/data/Filza.app");
@@ -694,9 +717,9 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
                     fclose(app);
                 }
                 
-                if (!fileExists(in_bundle("bins/ADMHelper"))) {
+                if (fileExists(in_bundle("bins/ADMHelper.tar"))) {
                     chdir(in_bundle("bins/"));
-                    
+                    removeFile(in_bundle("bins/ADMHelper"));
                     FILE *f1 = fopen(in_bundle("bins/ADMHelper.tar"), "r");
                     untar(f1, in_bundle("bins/ADMHelper"));
                     fclose(f1);
@@ -704,10 +727,9 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
                     chown(in_bundle("bins/ADMHelper"), 0, 0);//chown root /usr/bin/ADMHelper
                     NSUInteger perm = S_ISUID | S_ISGID | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
                     chmod(in_bundle("bins/ADMHelper"), perm);//chmod ug+s /usr/bin/ADMHelper
-                    
-                    removeFile(in_bundle("bins/ADMHelper.tar"));
                 }
                 copyFile(in_bundle("bins/ADMHelper"), "/var/containers/Bundle/tweaksupport/bin/ADMHelper");
+                removeFile(in_bundle("bins/ADMHelper"));
                 
                 [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/bin/ADMHelper" ents:@"platform.xml"];
                 [self resignAndInjectToTrustCache:@"/var/containers/Bundle/tweaksupport/Applications/ADManager.app/ADManager" ents:@"am.xml"];
@@ -1046,9 +1068,14 @@ end:;
 - (void)resignAndInjectToTrustCache:(NSString *)path ents:(NSString *)ents
 {
     ents = [NSString stringWithFormat:@"/var/containers/Bundle/tweaksupport/data/ents/entitlements_%@", ents];
-    NSString *p = [NSString stringWithFormat:@"/var/containers/Bundle/tweaksupport/usr/local/bin/jtool --sign --inplace --ent %@ %@ && /var/containers/Bundle/tweaksupport/usr/bin/inject %@", ents, path, path];
+    NSString *p = [NSString stringWithFormat:@"/var/containers/Bundle/tweaksupport/usr/local/bin/jtool --sign --inplace --ent %@ %@", ents, path];
     char *p_ = (char *)[p UTF8String];
     system_(p_);
+    
+    
+    p = [NSString stringWithFormat:@"/var/containers/Bundle/tweaksupport/usr/bin/inject %@", path];
+    char *pp_ = (char *)[p UTF8String];
+    system_(pp_);
     
     printf("[S] %s\n", p_);
 }
