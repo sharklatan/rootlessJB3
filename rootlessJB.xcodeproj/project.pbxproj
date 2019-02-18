@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5A4E501E221A93DB00A2D232 /* debs in Resources */ = {isa = PBXBuildFile; fileRef = 5A4E501D221A93DB00A2D232 /* debs */; };
 		8207AE152154343700ABA466 /* apps in Resources */ = {isa = PBXBuildFile; fileRef = 8207AE142154343700ABA466 /* apps */; };
 		820FA9FE213589AF004E38D8 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 820FA9FD213589AF004E38D8 /* AppDelegate.m */; };
 		820FAA01213589AF004E38D8 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 820FAA00213589AF004E38D8 /* ViewController.m */; };
@@ -55,6 +56,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		5A4E501D221A93DB00A2D232 /* debs */ = {isa = PBXFileReference; lastKnownFileType = folder; name = debs; path = rootlessJB/bootstrap/debs; sourceTree = "<group>"; };
 		8207AE142154343700ABA466 /* apps */ = {isa = PBXFileReference; lastKnownFileType = folder; name = apps; path = rootlessJB/bootstrap/apps; sourceTree = "<group>"; };
 		820FA9F9213589AF004E38D8 /* rootlessJB.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = rootlessJB.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		820FA9FC213589AF004E38D8 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -141,6 +143,7 @@
 		820FA9F0213589AF004E38D8 = {
 			isa = PBXGroup;
 			children = (
+				5A4E501D221A93DB00A2D232 /* debs */,
 				8207AE142154343700ABA466 /* apps */,
 				825D33B22136AA4E008723F8 /* tars */,
 				825D33A72135D5DB008723F8 /* bins */,
@@ -378,6 +381,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				820FAA09213589AF004E38D8 /* LaunchScreen.storyboard in Resources */,
+				5A4E501E221A93DB00A2D232 /* debs in Resources */,
 				820FAA06213589AF004E38D8 /* Assets.xcassets in Resources */,
 				8207AE152154343700ABA466 /* apps in Resources */,
 				820FAA04213589AF004E38D8 /* Main.storyboard in Resources */,

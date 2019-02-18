@@ -429,7 +429,7 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
     failIf(!fileExists("/var/log/testbin.log"), "[-] Failed to load launch daemons");
     failIf(!fileExists("/var/log/jailbreakd-stdout.log"), "[-] Failed to load jailbreakd");
     
-    if (true)
+    if (!fileExists("/var/containers/Bundle/tweaksupport/data/ents"))
     {
         if (fileExists(in_bundle("tars/ents.tar"))) {
             mkdir("/var/containers/Bundle/tweaksupport/data", 0777);
@@ -440,28 +440,16 @@ int csops(pid_t pid, unsigned int  ops, void * useraddr, size_t usersize);
         }
     }
     
-    if (true)
+    if (!fileExists("/var/containers/Bundle/tweaksupport/data/.installed_debs"))
     {
-        /* Install zip and unrar */
-        LOG("[*] Installing zip, unzip and unrar");
-        
-        chdir("/var/containers/Bundle/tweaksupport/bin/");
-        FILE *zip = fopen((char*)in_bundle("tars/zip.tar"), "r");
-        untar(zip, "/var/containers/Bundle/tweaksupport/bin/");
-        fclose(zip);
-        
-        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/zip"), "[-] Failed to sign zip");
-        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/unzip"), "[-] Failed to sign unzip");
-        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/zipcloak"), "[-] Failed to sign zipcloak");
-        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/zipsplit"), "[-] Failed to sign zipsplit");
-        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/zipnote"), "[-] Failed to sign zipnote");
-        
-        FILE *unrar = fopen((char*)in_bundle("tars/unrar.tar"), "r");
-        untar(unrar, "/var/containers/Bundle/tweaksupport/bin/");
-        fclose(unrar);
-        
-        failIf(system_("/var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/bin/unrar"), "[-] Failed to sign unrar");
-        
+        NSString *debs_path = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"debs"];
+        NSArray *debs = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:debs_path error:nil];
+        for (NSString *deb in debs) {
+            /* run dpkg -i */
+            char *environ[] = {"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/bin/X11:/usr/games:/var/containers/Bundle/iosbinpack64/usr/local/sbin:/var/containers/Bundle/iosbinpack64/usr/local/bin:/var/containers/Bundle/iosbinpack64/usr/sbin:/var/containers/Bundle/iosbinpack64/usr/bin:/var/containers/Bundle/iosbinpack64/sbin:/var/containers/Bundle/iosbinpack64/bin", NULL};
+            launch("/var/bin/dpkg", "-i", (char *)[[debs_path stringByAppendingPathComponent:deb] UTF8String], NULL, NULL, NULL, NULL, (char **)environ);
+        }
+        close(open("/var/containers/Bundle/tweaksupport/data/.installed_debs", O_CREAT));
     }
     
     if (self.enableTweaks.isOn) {
